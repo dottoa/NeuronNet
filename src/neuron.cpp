@@ -68,3 +68,5 @@ std::string Neuron::formatted_values() const {
     ss << _poten << '\t' << _recov << '\t' << _input;
     return ss.str();
 }
+
+

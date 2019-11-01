@@ -128,3 +128,57 @@ void Network::print_traj(const int time, const std::map<std::string, size_t> &_n
             }
     (*_out) << std::endl;
 }
+
+  /*Calculates the number and total intensity of connections to neuron \p n.
+  \param n : the index of the receiving neuron.
+  \return a pair {number of connections, sum of link intensities}.
+ */
+std::vector<std::pair<size_t,double>> Network::neighbors(const size_t& t) const{
+	
+	std::vector<std::pair<size_t,double>> voisins(0);
+	for(linkmap::const_iterator i=links.lower_bound({t,0});i!=links.end() and  ((i->first).first)==t; ++i){
+			std::pair<size_t,double> voisin((i->first).second,i->second);
+			voisins.push_back(voisin);
+	}
+	return voisins;	
+} 
+ 
+ 
+std::pair<size_t, double> Network::degree(const size_t& t) const{
+	std::vector<std::pair<size_t,double>> voisins= neighbors(t);
+	double intensity (0);
+	for(auto e:voisins) intensity += e.second;
+	return std::make_pair(voisins.size(),intensity);
+}
+
+
+
+std::set<size_t> Network::step(const std::vector< double > & thalamique){
+	
+	std::set<size_t> ne;
+	for(unsigned int i(0); i<neurons.size();++i){		
+			double w(0.),exciting(0.),inhibiting(0.);
+			if(neurons[i].is_inhibitory()){w=0.4;}else{w=1;};
+			std::vector<std::pair<size_t,double>> voisins(neighbors(i));
+			for(auto v:voisins){
+				if(neurons[v.first].firing()){
+					if(neurons[v.first].is_inhibitory()){
+						inhibiting+= v.second;
+					}else{
+						exciting+= v.second;
+					}
+				}
+			}
+			neurons[i].input(w*thalamique[i]+0.5*exciting+inhibiting);
+		}
+	for(unsigned int i(0);i<neurons.size();i++){
+		if(neurons[i].firing()){
+			ne.insert(i);
+			neurons[i].reset();
+		}else{
+			neurons[i].step();
+		}
+	}
+	return ne;	
+}
+
